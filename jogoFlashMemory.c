@@ -28,6 +28,12 @@
 #define VALOR_CENTRAL 2048
 
 
+char texto_LED[20];
+ssd1306_t display;
+volatile int pontuacao = 0;
+volatile bool botaoA_pressionado = false;
+volatile bool botaoB_pressionado = false;
+
 
 void setup() {
 
@@ -40,10 +46,6 @@ void setup() {
     gpio_set_dir(LED_RED, GPIO_OUT);
     gpio_set_dir(LED_GREEN, GPIO_OUT);
     gpio_set_dir(LED_BLUE, GPIO_OUT);
-    
-    gpio_set_function(LED_RED, GPIO_FUNC_PWM);
-    gpio_set_function(LED_BLUE, GPIO_FUNC_PWM);
-
 
     //DISPLAY
     i2c_init(I2C_PORT, 400 * 1000);
@@ -73,14 +75,10 @@ void callback_botao(uint gpio, uint32_t events) {
 
     if (tempo_atual - ultimo_tempo >= TEMPO_DEBOUNCE) {
         if(gpio == BUTTON_A) {
-            led_R_ativado = !led_R_ativado;
-            led_B_ativado = !led_B_ativado;
-            pwm_set_enabled(slice_r, led_R_ativado); 
-            pwm_set_enabled(slice_b, led_B_ativado); 
+            botaoA_pressionado = true;
         }        
-        else if(gpio == JOYSTICK_BTN){
-            led_G_ativado = !led_G_ativado;
-            gpio_put(LED_GREEN, led_G_ativado);
+        else if(gpio == BUTTON_B){
+            botaoB_pressionado = true;
         }
     
     ultimo_tempo = tempo_atual;
@@ -88,12 +86,31 @@ void callback_botao(uint gpio, uint32_t events) {
 }
 
 
+void mensagem_inicializa(ssd1306_t display, char texto_LED[20]){
+
+    ssd1306_fill(&display, 0);
+    sprintf(texto_LED, "FLASH MEMORY");
+    ssd1306_draw_string(&display, texto_LED, 10, 10);
+    ssd1306_send_data(&display);
+    sprintf(texto_LED, "INICIALIZE A SEQUENCIA");
+    ssd1306_draw_string(&display, texto_LED, 10, 10);
+    ssd1306_send_data(&display);
+    sprintf(texto_LED, "ESPERE 10 SEGUNDOS E O JOGO JA VAI COMECAR");
+    ssd1306_draw_string(&display, texto_LED, 10, 10);
+    ssd1306_send_data(&display);
+    sprintf(texto_LED, "APERTE A PARA AZUL E B PARA VERDE");
+    ssd1306_draw_string(&display, texto_LED, 10, 10);
+    ssd1306_send_data(&display);
+}
+
 int main()
 {
     stdio_init_all();
 
     gpio_set_irq_enabled_with_callback(BUTTON_A, GPIO_IRQ_EDGE_FALL, true, &callback_botao);
     gpio_set_irq_enabled_with_callback(BUTTON_B, GPIO_IRQ_EDGE_FALL, true, &callback_botao);
+
+    mensagem_inicializa(display, texto_LED);
 
     while (true) {
         printf("Hello, world!\n");
