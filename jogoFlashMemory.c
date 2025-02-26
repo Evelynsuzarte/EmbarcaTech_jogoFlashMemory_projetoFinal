@@ -36,7 +36,7 @@ volatile bool botaoB_pressionado = false;
 
 void setup() {
 
-    stdio_init_all();
+   
 
     //LEDS
     gpio_init(LED_RED);
@@ -66,7 +66,7 @@ void setup() {
     gpio_set_dir(BUTTON_B, GPIO_IN);
     gpio_pull_up(BUTTON_B);
 
-    gpio_put(LED_RED, 1);
+    printf("entrou no setup");
 
 }
 
@@ -85,29 +85,17 @@ void callback_botao(uint gpio, uint32_t events) {
     }
 }
 
-bool compara_array(int *sequencia, int *resposta, int sequencia_quant, int resposta_quant){
-    int i;
-
-    if (sequencia_quant == resposta_quant){
-        for (int i = 0; i < sequencia_quant; i++) {
-            if (sequencia[i] != resposta[i]) {
-                return false;
-            }
-        }
-        return true;
-    }else{
-        return false;
-    }
-}
 
 void mensagem_inicializa(ssd1306_t display){
     ssd1306_draw_string(&display, "FLASH MEMORY", 10, 10);
-    ssd1306_draw_string(&display, "MEMORIZE A SEQUENCIA", 10, 15);
+    ssd1306_draw_string(&display, "MEMORIZE A SEQUENCIA", 10, 25);
     ssd1306_send_data(&display);
-    sleep_ms(3000);
+    sleep_ms(5000);
     ssd1306_fill(&display, 0);
     ssd1306_draw_string(&display, "APERTE A PARA AZUL E B PARA VERDE", 10, 10);
-    ssd1306_draw_string(&display, "ESPERE 10 SEGUNDOS E O JOGO JA VAI COMECAR", 10, 20);
+    sleep_ms(5000);
+    ssd1306_fill(&display, 0);
+    ssd1306_draw_string(&display, "ESPERE 10 SEGUNDOS E O JOGO JA VAI COMECAR", 10, 30);
     ssd1306_send_data(&display);
     sleep_ms(10000);
 }
@@ -132,8 +120,8 @@ void triangulo_vermelho(PIO pio, uint sm){
         // R    G    B       R    G    B       R    G    B       R    G    B       R    G    B
         {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}, // Linha 0
         {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}, // Linha 1
-        {{0.0, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}}, // Linha 2
-        {{0.0, 0.2, 0.0}, {0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}}, // Linha 3
+        {{0.0, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.0, 0.0, 0.0}}, // Linha 2
+        {{0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}, {0.2, 0.0, 0.0}}, // Linha 3
         {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}  // Linha 4
     };
     
@@ -173,104 +161,142 @@ void acende_led(int led){
         }
 }
 
-void exibir_sequencia(PIO pio, uint sm, int nivel, int pontuacao, int *sequencia){
-    int cor, i;
 
+int contar_itens(int sequencia[40]){
+    int contador = 0, i=0;
+
+    while(sequencia[i] != 0){
+        contador ++;
+        i++;
+    }
+
+    return contador;
+}
+
+bool compara_array(int sequencia[40], int resposta[40]){
+    int i;
+    int sequencia_quant = contar_itens(sequencia);
+    int resposta_quant = contar_itens(resposta);
+
+    if (sequencia_quant == resposta_quant){
+        for (int i = 0; i < sequencia_quant; i++) {
+            if (sequencia[i] != resposta[i]) {
+                return false;
+            }
+        }
+        return true;
+    }else{
+        return false;
+    }
+}
+
+void exibir_sequencia(PIO pio, uint sm, int nivel){
+    int cor, i, j;
+    int sequencia[40];
+    printf("entrou no exibir_sequencia");
+    printf("%d \n", nivel);
     for(i=0;i< nivel+1;i++){
-        sequencia[i] = rand() % 2;
+        sequencia[i] = (rand() % 2) + 1;
+        j = i+1;
     }
 
     acende_led(1);
     for(i=0;i<nivel+1;i++){
         cor = sequencia[i];
-        if (cor == 0){
+        printf("%d \n", i);
+        if (cor == 1){
             triangulo_azul(pio,sm);
-        }else if(cor == 1){
+        }else if(cor == 2){
             triangulo_vermelho(pio,sm);
         }
         sleep_ms(2000);
     }
 
-    if (nivel == 5){
-        char pont = pontuacao;
-        ssd1306_draw_string(&display, "FIM DE JOGO", 30, 10);
-        ssd1306_draw_string(&display, "PONTUACAO", 10, 20);
-        ssd1306_draw_char(&display, pont, 10, 30);
-        ssd1306_send_data(&display);
-    }
-    acende_led(0);
+    apaga_matriz(pio,sm);
 }
-
-
 int main()
 {
     stdio_init_all();
     PIO pio = pio0;
     uint sm = configurar_matriz(pio);
+    setup();
+    printf("entrou no main");
 
-    gpio_set_irq_enabled_with_callback(BUTTON_A, GPIO_IRQ_EDGE_FALL, true, &callback_botao);
-    gpio_set_irq_enabled_with_callback(BUTTON_B, GPIO_IRQ_EDGE_FALL, true, &callback_botao);
+    gpio_set_irq_enabled_with_callback(BUTTON_A, GPIO_IRQ_EDGE_RISE, true, &callback_botao);
+    gpio_set_irq_enabled_with_callback(BUTTON_B, GPIO_IRQ_EDGE_RISE, true, &callback_botao);
 
+    apaga_matriz(pio,sm);
     mensagem_inicializa(display);
 
     int nivel = 1;
     bool array_igual;
 
+    printf("entrou no main");
+
     while (true) {
-        int sequencia_resp[20]; 
-        int sequencia[20]; 
+        int sequencia_resp[40]; 
+        int sequencia[40]; 
+        char pont;
 
-        exibir_sequencia(pio, sm, nivel, pontuacao, sequencia);
-
-        apaga_matriz(pio, sm);
-
-        ssd1306_draw_string(&display, "RESPONDA A SEQUENCIA", 10, 10);
-        ssd1306_draw_string(&display, "A- AZUL", 10, 20);
-        ssd1306_draw_string(&display, "B- VERMELHO", 10, 30);
-        ssd1306_send_data(&display);
-
-        int quantidade = sizeof(sequencia) / sizeof(sequencia[0]);
-
-        if (botaoA_pressionado == true){
-            if (quantidade == 0){
-                sequencia_resp[0] = 0;
-            }else{
-                sequencia_resp[quantidade-1] = 0;
-            }
-            botaoA_pressionado = false;
-
-        } else if (botaoB_pressionado == true){
-            if (quantidade == 0){
-                sequencia_resp[0] = 1;
-            }else{
-                sequencia_resp[quantidade-1] = 1;
-            }
-            botaoB_pressionado = false;
-        }
-
-        int sequencia_quant = sizeof(sequencia) / sizeof(sequencia[0]);
-        int resposta_quant = sizeof(sequencia_resp) / sizeof(sequencia_resp[0]);
-
-        array_igual = compara_array(sequencia, sequencia_resp, sequencia_quant, resposta_quant);
-
-        if (array_igual){
-            acende_led(2);
-            pontuacao=pontuacao+1;
-            nivel=nivel+1;
-
-            ssd1306_fill(&display, 0);
-            ssd1306_draw_string(&display, "VC ACERTOU", 30, 30);
+        if (nivel == 5){
+            pont = pontuacao + '0';  
+            ssd1306_draw_string(&display, "FIM DE JOGO", 30, 10);
+            ssd1306_draw_string(&display, "PONTUACAO", 10, 20);
+            ssd1306_draw_char(&display, pont, 10, 30);
             ssd1306_send_data(&display);
-
         }else{
-            char pont = pontuacao;
-            acende_led(3);
-            ssd1306_fill(&display, 0);
-            ssd1306_draw_string(&display, "VC ERROU", 30, 30);
-            ssd1306_draw_string(&display, "PONTUACAO", 30, 10);
-            ssd1306_draw_char(&display, pont, 30, 30);
+            exibir_sequencia(pio, sm, nivel);
+
+            acende_led(0);
+
+            ssd1306_draw_string(&display, "RESPONDA A SEQUENCIA", 10, 10);
+            ssd1306_draw_string(&display, "A- AZUL", 10, 20);
+            ssd1306_draw_string(&display, "B- VERMELHO", 10, 30);
             ssd1306_send_data(&display);
-        }
+
+            int quantidade = contar_itens(sequencia);
+
+            sleep_ms(10000);
+
+            if (botaoA_pressionado == true){
+                if (quantidade == 0){
+                    sequencia_resp[0] = 0;
+                }else{
+                    sequencia_resp[quantidade-1] = 0;
+                }
+                botaoA_pressionado = false;
+
+            } else if (botaoB_pressionado == true){
+                if (quantidade == 0){
+                    sequencia_resp[0] = 1;
+                }else{
+                    sequencia_resp[quantidade-1] = 1;
+                }
+                botaoB_pressionado = false;
+            }
+
+            array_igual = compara_array(sequencia, sequencia_resp);
+
+            if (array_igual){
+                acende_led(2);
+                pontuacao=pontuacao+1;
+                nivel=nivel+1;
+
+                ssd1306_fill(&display, 0);
+                ssd1306_draw_string(&display, "VC ACERTOU", 30, 30);
+                ssd1306_send_data(&display);
+
+            }else{
+                pont = pontuacao + '0';  
+                acende_led(3);
+                ssd1306_fill(&display, 0);
+                ssd1306_draw_string(&display, "VC ERROU", 30, 10);
+                ssd1306_draw_string(&display, "PONTUACAO", 30, 20);
+                ssd1306_draw_char(&display, pont, 30, 30);
+                ssd1306_send_data(&display);
+            }
+            }
+            
 
         sleep_ms(2000);
         acende_led(4);
