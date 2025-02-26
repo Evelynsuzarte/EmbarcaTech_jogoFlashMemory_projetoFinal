@@ -67,7 +67,7 @@ target_include_directories(jogoFlashMemory PRIVATE
 target_link_libraries(jogoFlashMemory 
         )
 
-pico_generate_pio_header(comunicacaoserial ${CMAKE_CURRENT_LIST_DIR}/pio_matrix.pio)
+pico_generate_pio_header(jogoFlashMemory ${CMAKE_CURRENT_LIST_DIR}/pio_matrix.pio)
 
 pico_add_extra_outputs(jogoFlashMemory)
 
