@@ -1,1 +1,1 @@
-# EmbarcaTech_jogoFlashMemory_projetoFinal
+# Projeto final EmbarcaTech: Jogo Flash Memory - Desafio de Memória Interativo
